@@ -1,2 +1,481 @@
-# Implementation Plan 
-Four-Phase Development Blueprint for QuantumSynapse-BD為確保專案在高度技術跨界（R3F 3D 圖形學 $\times$ 高性能後端 $\times$ 量子信息科學）下順利落地，研發流程分為四個層次清晰、可獨立驗證的階段。To ensure successful delivery across multiple frontier disciplines (R3F 3D Graphics $\times$ High-performance Backend $\times$ Quantum Information Science), the development blueprint is structured into four distinct, independently verifiable phases.研發時程與里程碑 (Development Phases & Milestones)🚀 第一階段：前端 3D 視覺化與突觸場景原型 (Phase 1: 3D Visualization & Synaptic Prototype)核心目標 (Goal): 在 Next.js 中建構 R3F 的三維神經突觸環境，實現基本的細胞膜、受體與神經傳導物質粒子動畫。關鍵任務 (Tasks):搭建 Next.js Monorepo 基礎骨架與 Tailwind CSS 樣式庫。使用 Three.js/R3F 渲染神經元突觸前膜（Presynaptic）、突觸後膜（Postsynaptic）與突觸間隙（Synaptic Cleft）。利用 R3F 的 <instances> 或 ShaderMaterial 實作高性能的多巴胺（Dopamine）、血清素（Serotonin）粒子漫反射動畫。驗證指標 (Milestone): 前端能在 60FPS 幀率下流暢操作 3D 突觸場景，並能手動切換躁症（粒子密集、受體高頻過載）與鬱症（粒子稀疏、受體去活化）的視覺狀態。⚙️ 第二階段：高性能生化模擬後端與狀態機 (Phase 2: High-Performance Simulation Backend)核心目標 (Goal): 使用 Go 或 Rust 建構核心模擬引擎，將生化反應與藥效動力學抽象為實時狀態機。關鍵任務 (Tasks):設計核心藥效動力學模型，採用 Hill Equation 數值公式計算配體-受體結合率：$$\theta = \frac{[L]^n}{K_d + [L]^n}$$在 Go/Rust 中實作高並發的常微分方程（ODE）求解器，模擬時間序列下的神經傳導物質濃度平衡。整合 WebSocket 模組，確保經典藥物（如鋰鹽、丙戊酸鈉）的模擬結果能以極低延遲推送到前端 R3F 介面。驗證指標 (Milestone): 後端能在 5ms 內計算完單次藥效反饋，且 WebSocket 數據流與前端 3D 粒子密度的變更完全同步，無明顯肉眼延遲。⚛️ 第三階段：IBM Quantum (Qiskit) 運算微服務整合 (Phase 3: IBM Quantum & Qiskit Integration)核心目標 (Goal): 建構 Python 量子微服務，將新分子的化學描述轉化為量子電路，並透過 Qiskit Nature 求解基態能量。關鍵任務 (Tasks):封裝 services/quantum-worker，配置 Celery 與 Redis 來管理耗時的量子排隊與計算任務。實作 VQE (Variational Quantum Eigensolver) 演算法腳本，將分子的電子哈密頓量（Hamiltonian）透過 Jordan-Wigner 變換映射至量子位元線路。串接 IBM Quantum Runtime API，建立模擬器（AER Simulator）與真實量子硬體（IBM Quantum cloud）的切換開關。驗證指標 (Milestone): 給定一個簡化的新分子結構（如類鋰鹽配合物小分子），Python Worker 能成功調用 Qiskit 並在非同步隊列中返回精確的分子軌域能量常數。🧪 第四階段：實驗室進度條 UI/UX 拋光與系統整合 (Phase 4: Lab Progression UX & System Synthesis)核心目標 (Goal): 實作「實驗室深度分析進度條」非同步流，進行全系統聯調，並優化整體的科普與科學學術質感。關鍵任務 (Tasks):開發前端非同步監聽器，當 job_id 被推入量子隊列時，鎖定部分 UI，切換至沉浸式「量子分子對接模擬」等待畫面。精細化設計進度條：展示真實的量子指標（如：[Queue Position: 3] $\rightarrow$ [Mapping Hamiltonian...] $\rightarrow$ [Executing Quantum Circuits on IBM Q...]）。串接真實世界數據庫（DrugBank / KEGG），在 UI 邊欄附上詳盡的學術文獻來源與藥理學圖表。驗證指標 (Milestone): 完成端到端（End-to-End）完整閉環。使用者設計新藥 $\rightarrow$ 觸發實驗室進度條等待 $\rightarrow$ 量子計算完成 $\rightarrow$ R3F 3D 動態呈現新藥對雙相情緒障礙症突觸的修復效果。技術風險與緩解策略 (Technical Risks & Mitigations)風險：IBM Quantum 雲端排隊時間過長（可能長達數分鐘甚至數小時）緩解策略： 在量子 Worker 中建立強大的經典化學近似層（RDKit/機器學習預測）與本地量子模擬器（Qiskit Aer）。當排隊人數過多時，系統可自動降級為「本地量子虛擬模擬」，同時在進度條上誠實提示使用者正在使用「實驗室本地超級電腦模擬核」，確保極致的用戶體驗。風險：Web 頁面中大量的 3D 粒子造成 CPU/GPU 過載緩解策略： 在 R3F 中全面採用 Instanced Mesh 技術，將成千上萬個神經傳導物質粒子合併為單個 GPU Draw Call，並啟用視錐裁剪（Frustum Culling）。
+# Project Structure
+
+Based on the user's selections, this project will use:
+
+- **API Contracts**: OpenAPI spec + generated clients for all services
+- **DB Schema**: Prisma ORM for PostgreSQL
+- **Core Backend**: Go (Echo) with WebSocket + ODE solver
+- **Quantum Worker**: Python with Qiskit + Celery + Redis
+- **Frontend**: Next.js with OpenTelemetry + Cloudflare, procedural 3D assets
+- **Observability**: OpenTelemetry + Cloudflare Workers Logs
+- **State Management**: React Context + useReducer
+- **Auth**: Custom JWT + PostgreSQL users
+- **Deployment**: All on Cloudflare (Workers + Containers)
+- **Communication**: OpenAPI for polyglot compatibility
+- **Testing**: Vitest + Go test + pytest
+
+## Project Structure
+
+```
+quantumsynapse-bd/
+├── README.md
+├── docs/
+│   ├── structure.md
+│   ├── implementation.plan.md
+│   └── api-spec.yaml           # OpenAPI spec
+├── apps/
+│   └── web/
+│       ├── public/
+│       │   └── __generated__/
+│       │       └── __generated__.js  # OpenAPI client code
+│       ├── src/
+│       │   ├── components/
+│       │   │   ├── lab/               # Laboratory controls, progress bar
+│       │   │   └── r3f/              # React Three Fiber render core
+│       │   ├── hooks/               # Custom React hooks (useQuantumJob, etc.)
+│       │   ├── app/                 # Next.js App Router pages
+│       │   └── lib/                # WebSocket and API clients
+│       │
+│       └── package.json
+├── services/
+│   ├── core-engine/               # Core simulation backend (Go)
+│   │   ├── src/
+│   │   │   ├── models/            # Biochemical state models
+│   │   │   ├── pharmacodynamics/  # Classical drug effects (Hill Equation)
+│   │   │   └── websocket/        # Real-time data streaming
+│   │   ├── Dockerfile
+│   │   └── go.mod
+│   └── quantum-worker/            # IBM Quantum microservice (Python)
+│       ├── src/
+│       │   ├── celery_app.py      # Asynchronous task queue
+│       │   └── quantum_circuits/  # Qiskit quantum circuits
+│       │       ├── vqe_solver.py  # Variational Quantum Eigensolver
+│       │       └── molecule_builder.py  # SMILES to quantum Hamiltonian
+│       └── docker-compose.yml
+├── config/                        # Configuration
+│   ├── postgres/                 # Database initialization
+│   │   ├── schema.prisma         # Prisma data model
+│   │   └── migrations/
+│   └── cloudflare/               # wrangler.toml (Edge routing)
+└── docs/
+    ├── setup-guide.md
+    └── api-contracts.md
+```
+
+## Phase 1: Setup & Infrastructure
+
+### 1.1 Project Initialization
+- [ ] Set up monorepo with Nx or Turborepo
+- [ ] Initialize all service repositories
+- [ ] Set up shared config (tsconfig, linting, prettierrc)
+
+### 1.2 Infrastructure Setup
+- [ ] Create PostgreSQL database with Prisma schema
+- [ ] Set up Redis for Celery
+- [ ] Configure Docker volumes and networks
+- [ ] Initialize GitHub Actions/CI workflows
+
+### 1.3 OpenAPI Specification
+- [ ] Create `/docs/api-spec.yaml` with all endpoints
+- [ ] Generate Next.js client types
+- [ ] Generate Go server stubs
+- [ ] Generate Python client
+- [ ] Set up API gateway/Wrangler routes
+
+## Phase 2: Database & Core Backend
+
+### 2.1 Database Schema (Prisma)
+```prisma
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String?
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  simulations   Simulation[]
+}
+
+model Drug {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  smiles      String   // RDKit SMILES
+  molecularWeight Float
+  isClassical Boolean @default(true)
+  createdAt   DateTime @default(now())
+  simulations Simulation[]
+}
+
+model QuantumJob {
+  id            String   @id @default(cuid())
+  moleculeSMILES String
+  moleculeStructure JSON // 3D coordinates
+  status        JobStatus @default(QUEUED)
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+  result        JSON?
+  error         String?
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+}
+
+model Simulation {
+  id              String   @id @default(cuid())
+  name            String
+  type            SimulationType
+  parameters      JSON
+  status          SimulationStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+  result          JSON?
+  error           String?
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  drug            Drug?    @relation(fields: [drugId], references: [id])
+  drugId          String?
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum SimulationType {
+  CLASSICAL_DRUG_SIMULATION
+  QUANTUM_DE_NOVO_SYNTHESIS
+}
+
+enum SimulationStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+```
+
+### 2.2 Core Engine (Go)
+- [ ] Create Go module with Echo framework
+- [ ] Implement WebSocket server for real-time updates
+- [ ] Build ODE solver for pharmacodynamics (Hill equation)
+- [ ] Create OpenAPI server documentation
+- [ ] Implement API endpoints for Drug simulation
+- [ ] Add JWT authentication middleware
+- [ ] Set up structured logging with OpenTelemetry
+- [ ] Write unit tests (Go test)
+
+### 2.3 API Endpoints (Core Engine)
+```yaml
+/openapi: 3.0.0
+info:
+  title: QuantumSynapse-BD Core Engine API
+  version: 1.0.0
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: User login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: {type: string}
+                password: {type: string}
+      responses:
+        '200': {description: Login successful}
+  /api/v1/simulations:
+    post:
+      summary: Create new simulation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                type: {type: string}
+                parameters: {type: object}
+                drugId: {type: string}
+      responses:
+        '201': {description: Simulation created}
+  /api/v1/simulations/{id}/result:
+    get:
+      summary: Get simulation result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {description: Simulation result}
+  /api/v1/quantum-jobs:
+    post:
+      summary: Queue quantum calculation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                moleculeSMILES: {type: string}
+                moleculeStructure: {type: object}
+      responses:
+        '202': {description: Job queued}
+  /api/v1/quantum-jobs/{id}/status:
+    get:
+      summary: Get quantum job status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {description: Job status}
+```
+
+## Phase 3: Quantum Worker
+
+### 3.1 Quantum Microservice Setup
+- [ ] Create Python virtual environment
+- [ ] Set up Celery with Redis broker
+- [ ] Install Qiskit Nature, RDKit, Celery
+- [ ] Implement VQE solver with Jordan-Wigner transformation
+- [ ] Create molecule builder from SMILES
+- [ ] Set up IBM Quantum integration
+- [ ] Write unit/integration tests (pytest)
+
+### 3.2 Quantum Worker Components
+```python
+# services/quantum-worker/src/quantum_worker/quantum_circuits/vqe_solver.py
+from qiskit_nature.second_q.problems import ElectronicStructureProblem
+from qiskit_nature.second_q.algorithms import VQE
+from qiskit_nature.second_q.transformers import JordanWignerTransformer
+
+def solve_vqe(molecule_smiles, molecule_structure):
+    # Build molecular Hamiltonian
+    # Configure VQE parameters
+    # Execute on IBM Quantum
+    # Return ground state energy
+    pass
+
+# services/quantum-worker/src/celery_app.py
+from celery import Celery
+import os
+
+app = Celery('quantum_worker')
+app.config_from_object('django.conf:settings', namespace='CELERY')
+
+@app.task
+@shared_task
+def process_quantum_job(job_id, molecule_smiles, molecule_structure):
+    # Process quantum calculation
+    # Update database with results
+    # Emit WebSocket event
+    pass
+```
+
+## Phase 4: Frontend
+
+### 4.1 Next.js Application Setup
+- [ ] Set up Next.js with TypeScript
+- [ ] Install React Three Fiber dependencies
+- [ ] Create WebSocket client
+- [ ] Set up OpenTelemetry instrumentation
+- [ ] Install shared components from @/shared/ui
+- [ ] Configure Cloudflare Workers integration
+
+### 4.2 Application Features
+- [ ] Auth provider with JWT handling
+- [ ] Simulation results dashboard
+- [ ] 3D synaptic visualization (R3F)
+- [ ] Real-time WebSocket updates
+- [ ] Drug search and selection interface
+- [ ] Quantum job monitoring (progress bar)
+- [ ] Lab transition animation (immersive waiting)
+- [ ] Responsive dark/light theme
+
+### 4.3 Frontend Components
+```typescript
+// apps/web/src/components/lab/LaboratoryDashboard.tsx
+interface Simulation {
+  id: string
+  name: string
+  type: 'CLASSICAL_DRUG_SIMULATION' | 'QUANTUM_DE_NOVO_SYNTHESIS'
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+  result?: JSON
+}
+
+// apps/web/src/hooks/useWebSocket.tsx
+const useWebSocket = (url: string) => {
+  // WebSocket connection logic
+  // Reconnect handling
+  // Message parsing
+  // Connection state management
+}
+
+// apps/web/src/components/r3f/SynapseScene.tsx
+const SynapseScene = () => {
+  // R3F scene setup
+  // Particle system for neurotransmitters
+  // Receptor visualization
+  // WebSocket event handling for real-time updates
+  // Immersive quantum waiting state transitions
+}
+```
+
+## Phase 5: Deployment & Integration
+
+### 5.1 Docker Configuration
+- [ ] Build multi-arch Docker images for all services
+- [ ] Set up PostgreSQL, Redis, and other services
+- [ ] Configure Cloudflare Workers for edge routing
+- [ ] Set up CI/CD pipelines
+
+### 5.2 Production Deployment
+```yaml
+# docker-compose.yml
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: quantumsynapse
+      POSTGRES_USER: quantumsynapse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
+  core-engine:
+    build: ./services/core-engine
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://quantumsynapse:${POSTGRES_PASSWORD}@postgres:5432/quantumsynapse
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app_network
+
+  quantum-worker:
+    build: ./services/quantum-worker
+    environment:
+      DATABASE_URL: postgresql://quantumsynapse:${POSTGRES_PASSWORD}@postgres:5432/quantumsynapse
+      REDIS_URL: redis://redis:6379
+      IBM_QUANTUM_TOKEN: ${IBM_QUANTUM_TOKEN}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app_network
+
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: https://api.quantumsynapse.local
+      NEXT_PUBLIC_WS_URL: wss://api.quantumsynapse.local
+    depends_on:
+      - core-engine
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+### 5.3 Cloudflare Configuration
+- [ ] Set up Wrangler configuration
+- [ ] Configure Workers for API routing
+- [ ] Set up PostgreSQL integration
+- [ ] Configure observability (logs, metrics)
+
+## Phase 6: Testing & Quality Assurance
+
+### 6.1 Testing Strategy
+- [ ] Unit tests (Vitest + Go test + pytest)
+- [ ] Integration tests (Playwright e2e tests)
+- [ ] Contract tests (OpenAPI validation)
+- [ ] Performance tests for WebSocket updates
+- [ ] Load testing for quantum calculations
+
+### 6.2 Development Workflow
+```bash
+# Test all services
+npm test               # Vitest for frontend
+go test ./...         # Go tests
+pytest services/quantum-worker/ -v  # Python tests
+
+# Linting
+npm run lint          # Frontend lint
+golangci-lint run     # Go lint
+pylint services/quantum-worker/  # Python lint
+
+# Type checking
+npx tsc --noEmit       # TypeScript
+
+# API validation
+swagger-cli validate docs/api-spec.yaml
+```
+
+## Phase 7: Maintenance & Operations
+
+### 7.1 Monitoring
+- [ ] Set up OpenTelemetry exporters
+- [ ] Configure Grafana dashboards
+- [ ] Set up alerting for failed jobs
+- [ ] Performance monitoring
+
+### 7.2 Maintenance
+- [ ] Automated database migrations
+- [ ] Health checks for all services
+- [ ] Backup and disaster recovery
+- [ ] Performance tuning
+
+## Current Implementation Status
+
+### Completed
+- ✅ Project structure defined
+- ✅ API contracts specified (OpenAPI)
+- ✅ Technology stack chosen
+- ✅ PostgreSQL schema designed (Prisma)
+- ✅ Component blueprint established
+
+### In Progress
+- 📋 Infrastructure setup (PostgreSQL, Redis, Docker)
+- 📋 OpenAPI specification creation
+- 📋 Core engine (Go) setup
+
+### Next Steps
+1. Start infrastructure setup
+2. Create OpenAPI spec
+3. Initialize Go project
+4. Implement database schema
+
