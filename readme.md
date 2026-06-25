@@ -1,4 +1,4 @@
-# QuantumSynapse-BD 🧠⚛️
+# QuantumSynapse-BD 
 > **Quantum Molecular Dynamics & Synaptic Simulation for Bipolar Disorder Therapeutics**
 
 `QuantumSynapse-BD` 是一個創新的全端虛擬實驗室平台，旨在透過 **React Three Fiber (R3F)** 的三維微觀視覺化，模擬已知精神科藥物對雙相情緒障礙症（Bipolar Disorder, BD）的神經突觸影響。此外，本系統建構了「經典-量子混合架構（Hybrid Classical-Quantum Architecture）」，允許使用者設計、合成「新穎藥物分子（De Novo Molecules）」，並非同步調度 **IBM Quantum (Qiskit)** 運算資源，深度分析新分子與神經受體（如 G 蛋白偶聯受體 GPCRs）的結合親和力（Binding Affinity）與電子基態能量。
