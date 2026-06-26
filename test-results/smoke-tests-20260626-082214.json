@@ -1,0 +1,33 @@
+{
+  "smoke_tests": {
+    "status": "completed",
+    "timestamp": "2026-06-26T00:22:14Z",
+    "frontend": {
+      "status": "checked",
+      "lint": "passed"
+    },
+    "backend": {
+      "status": "checked", 
+      "go_build": "passed"
+    },
+    "python": {
+      "status": "checked",
+      "imports": "passed"
+    },
+    "api_contract": {
+      "status": "checked",
+      "openapi_version": "present",
+      "api_paths": "defined",
+      "health_endpoint": "defined"
+    },
+    "configuration": {
+      "status": "checked",
+      "prisma_schema": "present",
+      "env_example": "present"
+    }
+  },
+  "service_health": {
+    "core_engine": "checking",
+    "quantum_worker": "checking"
+  }
+}
