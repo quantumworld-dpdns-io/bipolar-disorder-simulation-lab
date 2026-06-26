@@ -1,4 +1,4 @@
-# Project Structure
+# Implementation Plan
 
 Based on the user's selections, this project will use:
 
@@ -6,7 +6,7 @@ Based on the user's selections, this project will use:
 - **DB Schema**: Prisma ORM for PostgreSQL
 - **Core Backend**: Go (Echo) with WebSocket + ODE solver
 - **Quantum Worker**: Python with Qiskit + Celery + Redis
-- **Frontend**: Next.js with OpenTelemetry + Cloudflare, procedural 3D assets
+- **Frontend**: Next.js with TypeScript, React Three Fiber
 - **Observability**: OpenTelemetry + Cloudflare Workers Logs
 - **State Management**: React Context + useReducer
 - **Auth**: Custom JWT + PostgreSQL users
@@ -45,7 +45,7 @@ quantumsynapse-bd/
 │   │   │   └── websocket/        # Real-time data streaming
 │   │   ├── Dockerfile
 │   │   └── go.mod
-│   └── quantum-worker/            # IBM Quantum microservice (Python)
+│   └── quantum-worker/            # IBM Quantum / Qiskit microservice (Python)
 │       ├── src/
 │       │   ├── celery_app.py      # Asynchronous task queue
 │       │   └── quantum_circuits/  # Qiskit quantum circuits
@@ -65,7 +65,7 @@ quantumsynapse-bd/
 ## Phase 1: Setup & Infrastructure
 
 ### 1.1 Project Initialization
-- [ ] Set up monorepo with Nx or Turborepo
+- [ ] Set up monorepo with Turborepo or Nx
 - [ ] Initialize all service repositories
 - [ ] Set up shared config (tsconfig, linting, prettierrc)
 
