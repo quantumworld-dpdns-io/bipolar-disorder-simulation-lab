@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: QuantumSynapse-BD Core Engine API
+  description: Core simulation backend with pharmacodynamics and WebSocket support
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@quantumsynapse.local
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://api.quantumsynapse.local
+    description: Production server
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "user@example.com"
+              password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid credentials"
+                code: "ERROR_INVALID_CREDENTIALS"
+
+  /api/v1/simulations:
+    post:
+      tags:
+        - Simulations
+      summary: Create new simulation
+      description: Submit a new pharmacodynamics or quantum simulation job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSimulationRequest'
+      responses:
+        '201':
+          description: Simulation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Simulations
+      summary: List user simulations
+      description: Get list of simulations for the authenticated user
+      parameters:
+        - $ref: '#/components/parameters/XRequestID'
+        - $ref: '#/components/parameters/XUserID'
+      responses:
+        '200':
+          description: List of simulations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimulationResponse'
+
+  /api/v1/simulations/{simulationId}:
+    get:
+      tags:
+        - Simulations
+      summary: Get simulation details
+      description: Retrieve specific simulation by ID
+      parameters:
+        - $ref: '#/components/parameters/SimulationID'
+      responses:
+        '200':
+          description: Simulation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResponse'
+        '404':
+          description: Simulation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/simulations/{simulationId}/result:
+    get:
+      tags:
+        - Simulations
+      summary: Get simulation result
+      description: Retrieve simulation result when available
+      parameters:
+        - $ref: '#/components/parameters/SimulationID'
+      responses:
+        '200':
+          description: Simulation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResultResponse'
+        '202':
+          description: Simulation still processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingResponse'
+
+  /api/v1/quantum-jobs:
+    post:
+      tags:
+        - Quantum Jobs
+      summary: Queue quantum computation job
+      description: Submit quantum calculation request (SMILES → VQE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuantumJobRequest'
+      responses:
+        '202':
+          description: Job queued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuantumJobResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/quantum-jobs/{jobId}:
+    get:
+      tags:
+        - Quantum Jobs
+      summary: Get quantum job status
+      description: Check status of quantum computation job
+      parameters:
+        - $ref: '#/components/parameters/QuantumJobID'
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuantumJobResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/health:
+    get:
+      tags:
+        - System
+      summary: Health check
+      description: Service health status endpoint
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /ws/simulations/{simulationId}:
+    get:
+      tags:
+        - WebSocket
+      summary: WebSocket simulation updates
+      description: Real-time simulation progress updates via WebSocket
+      parameters:
+        - $ref: '#/components/parameters/SimulationID'
+      responses:
+        '101':
+          description: Switching protocols
+          headers:
+            Upgrade:
+              schema:
+                type: string
+              example: "websocket"
+            Connection:
+              schema:
+                type: string
+              example: "Upgrade"
+        '400':
+          description: Upgrade failed
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "password123"
+
+    LoginResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    CreateSimulationRequest:
+      type: object
+      required:
+        - name
+        - type
+        - parameters
+      properties:
+        name:
+          type: string
+          example: "Bipolar Treatment Simulation"
+        type:
+          type: string
+          enum: [CLASSICAL_DRUG_SIMULATION, QUANTUM_DE_NOVO_SYNTHESIS]
+          example: "CLASSICAL_DRUG_SIMULATION"
+        parameters:
+          type: object
+          example:
+            initial_concentration: 1.0
+            rate: 0.1
+            duration: 24.0
+            drug_id: "drug_123"
+        drugId:
+          type: string
+          example: "drug_123"
+
+    SimulationResponse:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "sim_202401011234567890"
+        name:
+          type: string
+          example: "Bipolar Treatment Simulation"
+        type:
+          type: string
+          example: "CLASSICAL_DRUG_SIMULATION"
+        parameters:
+          type: object
+          example:
+            initial_concentration: 1.0
+            rate: 0.1
+            duration: 24.0
+            drug_id: "drug_123"
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+          example: "PENDING"
+        result:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:34:56Z"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T14:34:56Z"
+
+    SimulationResultResponse:
+      type: object
+      required:
+        - status
+        - result
+      properties:
+        status:
+          type: string
+          example: "COMPLETED"
+        result:
+          type: object
+          example:
+            concentrations: [0.1, 0.5, 1.0, ...]
+            peak_concentration: 1.0
+        error:
+          type: string
+          nullable: true
+
+    ProcessingResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: "RUNNING"
+
+    QuantumJobRequest:
+      type: object
+      required:
+        - molecule_smiles
+      properties:
+        molecule_smiles:
+          type: string
+          example: "C1=CC=CC=C1"  # Benzene SMILES
+        molecule_structure:
+          type: object
+          description: 3D coordinates and molecular structure
+          example:
+            atoms: ["C", "C", "C", "C", "C", "C"]
+            bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]]
+            coordinates:
+              - [0.0, 0.0, 0.0]
+              - [1.4, 0.0, 0.0]
+              - [2.1, 0.0, 0.0]
+              - [2.8, 0.0, 0.0]
+              - [3.5, 0.0, 0.0]
+              - [1.4, 1.2, 0.0]
+
+    QuantumJobResponse:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "job_202401011234567890"
+        molecule_smiles:
+          type: string
+          example: "C1=CC=CC=C1"
+        molecule_structure:
+          type: object
+        status:
+          type: string
+          enum: [QUEUED, PROCESSING, COMPLETED, FAILED]
+          example: "QUEUED"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:34:56Z"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T14:34:56Z"
+        result:
+          type: object
+          nullable: true
+
+    Error:
+      type: object
+      required:
+        - error
+        - code
+      properties:
+        error:
+          type: string
+          example: "Resource not found"
+        code:
+          type: string
+          example: "ERROR_NOT_FOUND"
+        details:
+          type: object
+          nullable: true
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+      properties:
+        status:
+          type: string
+          example: "healthy"
+        version:
+          type: string
+          example: "1.0.0"
+        uptime:
+          type: number
+          example: 3600
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:34:56Z"
+
+  parameters:
+    XRequestID:
+      name: X-Request-ID
+      in: header
+      description: Unique request identifier for tracing
+      required: false
+      schema:
+        type: string
+        example: "req_123456789"
+
+    XUserID:
+      name: X-User-ID
+      in: header
+      description: User ID for authentication
+      required: false
+      schema:
+        type: string
+        example: "user_123"
+
+    SimulationID:
+      name: simulationId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: "sim_123456789"
+
+    QuantumJobID:
+      name: jobId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: "job_123456789"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  examples:
+    classicalSimulationRequest:
+      summary: Example classical simulation request
+      value:
+        name: "Lithium Treatment Response"
+        type: "CLASSICAL_DRUG_SIMULATION"
+        parameters:
+          initial_concentration: 1.0
+          rate: 0.1
+          duration: 24.0
+          drug_id: "drug_001"
+
+    quantumJobRequest:
+      summary: Example quantum job request
+      value:
+        molecule_smiles: "C1=CC=CC=C1"
+        molecule_structure:
+          atoms: ["C", "C", "C", "C", "C", "C"]
+          bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]]
+          coordinates:
+            - [0.0, 0.0, 0.0]
+            - [1.4, 0.0, 0.0]
+            - [2.1, 0.0, 0.0]
+            - [2.8, 0.0, 0.0]
+            - [3.5, 0.0, 0.0]
+            - [1.4, 1.2, 0.0]
+
+  tags:
+    - name: Authentication
+      description: User authentication and authorization
+    - name: Simulations
+      description: Classical drug simulation management
+    - name: Quantum Jobs
+      description: Quantum computation job management
+    - name: System
+      description: System health and monitoring
+    - name: WebSocket
+      description: Real-time updates and streaming
