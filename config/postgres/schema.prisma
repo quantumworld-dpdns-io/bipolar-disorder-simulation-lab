@@ -1,0 +1,164 @@
+# PostgreSQL Schema Initialization
+# Migration scripts for QuantumSynapse-BD PostgreSQL database
+
+-- File: config/postgres/schema.prisma
+-- Generated: 2024-01-01
+
+schema.prisma
+{
+  generator client {
+    provider = "prisma-client-js"
+  }
+
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+
+  model User {
+    id            String   @id @default(cuid())
+    email         String   @unique
+    passwordHash  String
+    name          String?
+    role          Role     @default(USER)
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+    simulations   Simulation[]
+  }
+
+  model Drug {
+    id              String    @id @default(cuid())
+    name            String
+    description     String?
+    smiles          String    // RDKit SMILES
+    molecularWeight Float
+    isClassical     Boolean   @default(true)
+    receptorTarget  String?
+    kD             Float?
+    hillCoefficient Float?
+    createdAt       DateTime  @default(now())
+    simulations     Simulation[]
+  }
+
+  model QuantumJob {
+    id               String    @id @default(cuid())
+    userId           String
+    moleculeSMILES   String
+    moleculeStructure Json      // 3D coordinates
+    status           JobStatus @default(QUEUED)
+    createdAt        DateTime  @default(now())
+    completedAt      DateTime?
+    result           Json?
+    error            String?
+    user             User      @relation(fields: [userId], references: [id])
+  }
+
+  model Simulation {
+    id              String          @id @default(cuid())
+    name            String
+    type            SimulationType
+    parameters      Json
+    status          SimulationStatus @default(PENDING)
+    createdAt       DateTime         @default(now())
+    completedAt     DateTime?
+    result          Json?
+    error           String?
+    userId          String
+    drugId          String?
+    user            User              @relation(fields: [userId], references: [id])
+    drug            Drug?             @relation(fields: [drugId], references: [id])
+  }
+
+  enum Role {
+    USER
+    ADMIN
+  }
+
+  enum JobStatus {
+    QUEUED
+    RUNNING
+    COMPLETED
+    FAILED
+  }
+
+  enum SimulationType {
+    CLASSICAL_DRUG_SIMULATION
+    QUANTUM_DE_NOVO_SYNTHESIS
+  }
+
+  enum SimulationStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+    FAILED
+  }
+}
+
+-- Migration: init
+-- Created: 2024-01-01
+
+CREATE TABLE "User" (
+    "id" VARCHAR(255) NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "passwordHash" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255),
+    "role" VARCHAR(255) NOT NULL DEFAULT 'USER',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Drug" (
+    "id" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "description" VARCHAR(255),
+    "smiles" VARCHAR(255) NOT NULL,
+    "molecularWeight" DOUBLE PRECISION NOT NULL,
+    "isClassical" BOOLEAN NOT NULL DEFAULT true,
+    "receptorTarget" VARCHAR(255),
+    "kD" DOUBLE PRECISION,
+    "hillCoefficient" DOUBLE PRECISION,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY ("id")
+);
+
+CREATE TABLE "QuantumJob" (
+    "id" VARCHAR(255) NOT NULL,
+    "userId" VARCHAR(255) NOT NULL,
+    "moleculeSMILES" VARCHAR(255) NOT NULL,
+    "moleculeStructure" JSONB NOT NULL,
+    "status" VARCHAR(255) NOT NULL DEFAULT 'QUEUED',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "result" JSONB,
+    "error" VARCHAR(255),
+    PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Simulation" (
+    "id" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "type" VARCHAR(255) NOT NULL,
+    "parameters" JSONB NOT NULL,
+    "status" VARCHAR(255) NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "result" JSONB,
+    "error" VARCHAR(255),
+    "userId" VARCHAR(255) NOT NULL,
+    "drugId" VARCHAR(255),
+    PRIMARY KEY ("id")
+);
+
+ALTER TABLE "QuantumJob" ADD CONSTRAINT "QuantumJob_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE;
+ALTER TABLE "Simulation" ADD CONSTRAINT "Simulation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE;
+ALTER TABLE "Simulation" ADD CONSTRAINT "Simulation_drugId_fkey" FOREIGN KEY ("drugId") REFERENCES "Drug" ("id") ON DELETE SET NULL;
+
+CREATE INDEX "User_email_idx" ON "User" ("email");
+CREATE INDEX "Simulation_userId_idx" ON "Simulation" ("userId");
+CREATE INDEX "Simulation_drugId_idx" ON "Simulation" ("drugId");
+
+-- Comment: Database schema for QuantumSynapse-BD
+-- Purpose: Store user data, drug information, quantum jobs, and simulation results
+-- Version: 1.0.0
+-- Date: 2024-01-01
