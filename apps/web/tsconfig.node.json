@@ -1,0 +1,11 @@
+# apps/web/tsconfig.node.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "esnext",
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "types": ["@types/node"],
+    "noEmit": true
+  }
+}

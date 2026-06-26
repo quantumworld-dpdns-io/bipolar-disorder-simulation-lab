@@ -1,0 +1,58 @@
+# Next.js Application
+name: quantumsynapse-web
+packageManager: pnpm@8.15.0
+turborepo:
+  root: true
+
+pipeline:
+  # TypeScript
+  typecheck:
+    outputs: []
+    inputs:
+      - 'apps/web/src/**/*.{ts,tsx}'
+
+  lint:
+    outputs: []
+    inputs:
+      - 'apps/web/src/**/*.{ts,tsx,js,jsx}'
+
+  build:
+    outputs:
+      - '.next/**'
+      - 'dist/**'
+    inputs:
+      - 'apps/web/src/**/*.{ts,tsx,js,jsx,css}'
+      - 'apps/web/package.json'
+      - 'apps/web/next.config.js'
+
+  test:
+    outputs: []
+    inputs:
+      - 'apps/web/src/**/*.{test,spec}.{ts,tsx}'
+
+# Go Service (Core Engine)
+pipeline-core:
+  test:
+    outputs: []
+    inputs:
+      - 'services/core-engine/**/*.go'
+
+  build:
+    outputs:
+      - 'services/core-engine/main'
+    inputs:
+      - 'services/core-engine/**/*.go'
+
+# Python Service (Quantum Worker)
+pipeline-quantum:
+  test:
+    outputs: []
+    inputs:
+      - 'services/quantum-worker/**/*.py'
+
+  build:
+    outputs:
+      - '.venv/**'
+      - '__pycache__/**'
+    inputs:
+      - 'services/quantum-worker/**/*.py'
